@@ -1,0 +1,30 @@
+FROM node:<%- nodeVer %>-alpine as dependencies
+WORKDIR /app
+COPY package.json ./
+<% if (isYarn) { -%>
+COPY yarn.lock ./
+<% } -%>
+<% if (!isYarn) { -%>
+COPY package-lock.lock ./
+<% } -%>
+RUN <%- packageManager %> install
+
+
+FROM node:<%- nodeVer %>-alpine as builder
+WORKDIR /app
+COPY . .
+COPY --from=dependencies /app/node_modules ./node_modules
+RUN apk add g++ make py3-pip
+RUN <%- packageManager %> build
+
+
+FROM node:<%- nodeVer %>-alpine
+WORKDIR /app
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+EXPOSE <%- applicationPort %>
+
+CMD <%- packageManager %> start
