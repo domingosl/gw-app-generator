@@ -5,6 +5,7 @@ const term = require('terminal-kit').terminal;
 const loadTemplate = require('./core/load-template');
 const writeFile = require('./core/write-file');
 const editDotEnv = require('./core/edit-dotenv');
+const copyCiServer = require('./core/copy-ci-server');
 
 term.on( 'key' , function( name ) {
     if ( name === 'CTRL_C' ) {
@@ -19,31 +20,61 @@ term.on( 'key' , function( name ) {
 
     let dockerCompose;
     let dockerFile;
-
+    let ciServerPort;
 
     term.clear();
 
     term().yellow("GrowishPay App Generator").nextLine().nextLine();
 
-    term("Type of project: ");
+    term("What would you like to add? ");
     const genType = await term.singleLineMenu(
         [
-            'CI server + Docker',
-            'CI server',
-            'Docker'
+            'CI server + Dockerization',
+            'Only CI server',
+            'Only Dockerization'
         ]
     ).promise;
 
     term().nextLine();
 
-    //CI Setup
+    term("Type of app:");
+    const appType = (await term.singleLineMenu(
+        [
+            'NestJS',
+            'Vanilla NodeJS app'
+        ]
+    ).promise).selectedText;
+
+    term().nextLine();
+
+    term("Package Manager:");
+    const packageManager = (await term.singleLineMenu(
+        [
+            'YARN',
+            'NPM'
+        ]
+    ).promise).selectedText;
+
+    term().nextLine();
+
+    let cmd;
+    if(appType === 'Vanilla NodeJS app') {
+        term("Command for running the application: ");
+        cmd = await term.inputField().promise;
+    } else
+        cmd = packageManager + ' build && ' + packageManager + ' start';
+
+    term().nextLine();
+
+
+    //CI SERVER Setup
     if(genType.selectedIndex <= 1) {
 
         term()
             .green('CI SERVER SETUP\n');
 
         term("CI server port: ");
-        const ciServerPort = await term.inputField().promise;
+        ciServerPort = await term.inputField().promise;
 
         term().nextLine();
 
@@ -51,9 +82,6 @@ term.on( 'key' , function( name ) {
         const githubWebhookSecret = await term.inputField().promise;
 
         term().nextLine();
-
-        term("Command for running the application: ");
-        const cmd = await term.inputField().promise;
 
 
         const dotEnvResults = editDotEnv({
@@ -75,6 +103,12 @@ term.on( 'key' , function( name ) {
                 .yellow(" and the necessary keys has been added. ")
                 .yellow("Remember, DO NOT commit this file to the repository\n");
 
+
+        copyCiServer();
+
+        term().nextLine();
+        term().red("ci-server.js").yellow(" was added to the root of your project. This file needs to be added to GIT and committed.")
+        term().nextLine();
 
 
     }
@@ -98,26 +132,6 @@ term.on( 'key' , function( name ) {
 
         term().nextLine();
 
-        term("Type of app:");
-        const appType = (await term.singleLineMenu(
-            [
-                'NestJS',
-                'Vanilla JS'
-            ]
-        ).promise).selectedText;
-
-        term().nextLine();
-
-        term("Package Manager:");
-        const packageManager = (await term.singleLineMenu(
-            [
-                'YARN',
-                'NPM'
-            ]
-        ).promise).selectedText;
-
-        term().nextLine();
-
         term("Service name: ");
         const serviceName = await term.inputField().promise;
 
@@ -128,15 +142,24 @@ term.on( 'key' , function( name ) {
 
         term().nextLine();
 
+
         term("Connected to backend-services? [Y|n]: ");
         const networkConnected = (await term.yesOrNo( { yes: [ 'y' , 'ENTER' ] , no: [ 'n' ] }).promise);
 
         dockerCompose = loadTemplate('docker-compose.yml', {
-            serviceName, containerName: serviceName, applicationPort, networkConnected
+            serviceName,
+            containerName: serviceName,
+            applicationPort,
+            networkConnected,
+            ciServerPort
         });
 
-        dockerFile = loadTemplate(appType === 'NestJS' ? 'Dockerfile-nextjs' : 'todo', {
-            applicationPort, packageManager: packageManager.toLowerCase(), nodeVer, isYarn: packageManager === 'YARN'
+        dockerFile = loadTemplate(appType === 'NestJS' ? 'Dockerfile-nextjs' : 'Dockerfile-vanilla-nodejs', {
+            applicationPort,
+            packageManager: packageManager.toLowerCase(),
+            nodeVer,
+            isYarn: packageManager === 'YARN',
+            cmd
         });
 
         term('\n');
@@ -149,13 +172,8 @@ term.on( 'key' , function( name ) {
 
         term().green("DONE!");
 
-        //console.log(dockerCompose);
-
     }
 
-
-
-    //
 
     term.nextLine();
 

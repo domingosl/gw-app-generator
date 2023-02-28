@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "gw-app-generator": "./bin/cli.js"
+  },
   "author": "Eng. Domingo Lupo",
   "license": "ISC",
   "dependencies": {

@@ -8,6 +8,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - '<%- applicationPort %>:<%- applicationPort %>'
+<% if (ciServerPort) { -%>
+      - '<%- ciServerPort %>:<%- ciServerPort %>'
+<% } -%>
 <% if (networkConnected) { -%>
 networks:
   default:

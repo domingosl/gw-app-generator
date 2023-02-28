@@ -87,7 +87,7 @@ const httpServer = (GW_CI_SERVER_PORT, GW_CI_SERVER_GITHUB_SECRET, handler) => {
 
     try {
 
-        let app = childProcess.exec('node test-app');
+        let app = childProcess.exec(config.GW_CI_SERVER_CMD);
         app.stdout.pipe(process.stdout);
 
         app.on('exit', function() {
@@ -99,17 +99,18 @@ const httpServer = (GW_CI_SERVER_PORT, GW_CI_SERVER_GITHUB_SECRET, handler) => {
             logger("Hook received!", req);
 
             const gitProcess = childProcess.exec('git pull');
+            gitProcess.stdout.pipe(process.stdout);
+
             gitProcess.on('exit', function() {
                 logger("Git pull completed!, killing app");
                 app.kill();
-                app = childProcess.exec('node test-app');
+                app = childProcess.exec(config.GW_CI_SERVER_CMD);
             });
 
         });
 
 
     } catch (e) {
-        console.log("--->", e);
         logger(e.message ? e.message : e);
     }
 

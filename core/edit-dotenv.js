@@ -33,7 +33,7 @@ const dotEnv = {
 
 module.exports = keyPairs => {
 
-    const dotEnvPath = path.join(__dirname, '..', '.env');
+    const dotEnvPath = path.join(process.cwd(), '.env');
 
     let dotEnvObj;
     const results = { dotEnvFound: false };

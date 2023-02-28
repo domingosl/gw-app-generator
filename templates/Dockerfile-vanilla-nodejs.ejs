@@ -1,0 +1,14 @@
+FROM node:<%- nodeVer %>-alpine
+WORKDIR /app
+COPY package.json ./
+<% if (isYarn) { -%>
+RUN yarn install
+<% } -%>
+<% if (!isYarn) { -%>
+RUN npm install
+<% } -%>
+COPY . .
+
+EXPOSE <%- applicationPort %>
+
+CMD <%- cmd %>
